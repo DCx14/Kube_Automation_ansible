@@ -1,0 +1,4 @@
+image:
+  tag: v1.14.2
+monitoring:
+  enabled: true
