@@ -58,9 +58,9 @@ metadata:
   name: bgp-peer
   namespace: metallb-system
 spec:
-  myASN: 64512
-  peerASN: 64512
-  peerAddress: 172.19.183.1
+  myASN: 64444
+  peerASN: 44442
+  peerAddress: 172.69.69.1
 ---
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
