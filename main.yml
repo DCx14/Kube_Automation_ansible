@@ -57,7 +57,7 @@
   - name: clone foo.git
     git:
       repo: 'https://github.com/DCx14/Kube_Automation_ansible.git'
-      dest: /root/Kube-sandbox
+      dest: /root/Kube_Automation_ansible
       
   ##### copy config files #####
         
