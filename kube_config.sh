@@ -10,7 +10,7 @@ sleep 30
 helm repo add rook-release https://charts.rook.io/release
 helm upgrade --install --atomic --create-namespace --namespace rook-ceph rook-ceph rook-release/rook-ceph -f helm-values/rook-operator-values.yaml --version 1.14.2
 # Installation rook cluster
-wget https://pastebin.com/raw/gSVcuEuj -O helm-values/rook-cluster-values.yaml
+#wget https://pastebin.com/raw/gSVcuEuj -O helm-values/rook-cluster-values.yaml
 helm upgrade --install --atomic --namespace rook-ceph rook-ceph-cluster rook-release/rook-ceph-cluster -f helm-values/rook-cluster-values.yaml --version 1.14.2
 # Activation du dashboard en LB optional
 #git clone https://github.com/rook/rook.git
@@ -58,9 +58,9 @@ metadata:
   name: bgp-peer
   namespace: metallb-system
 spec:
-  myASN: 64444
-  peerASN: 44442
-  peerAddress: 172.69.69.1
+  myASN: 64512
+  peerASN: 64512
+  peerAddress: 172.19.183.1
 ---
 apiVersion: metallb.io/v1beta1
 kind: IPAddressPool
@@ -102,7 +102,7 @@ PidFile=/var/run/zabbix/zabbix_agent2.pid
 LogFile=/var/log/zabbix/zabbix_agent2.log
 LogFileSize=0
 Server=127.0.0.1
-ServerActive=zabbix.mondomaine.fr
+ServerActive=zabbix.septeo.fr
 HostMetadata=linux lattes
 Include=/etc/zabbix/zabbix_agent2.d/*.conf
 ControlSocket=/tmp/agent.sock
