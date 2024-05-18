@@ -1,72 +1,15 @@
 - hosts: servers
   vars:
-    master: 172.69.69.10
-    node1: 172.69.69.11
-    node2: 172.69.69.12
-    rangeMetallb: 172.69.69.1-172.69.69.50
+    master: 10.10.100.100 #changeme
+    node1: 10.10.100.101 #changeme
+    node2: 10.10.100.102 #changeme
+    rangeMetallb: 10.10.100.180-10.10.100.230  #changeme
+#    vault_git_username: dylan
+#    vault_git_password: 42
+
   gather_facts: no
   tasks:
-
-  - name: Create a directory if it does not exist
-    ansible.builtin.file:
-      path: /root
-      state: directory
-      mode: '0755'
-      
-  - name: Copy config kube_config.sh file with owner and permissions
-    ansible.builtin.template:
-      src: /var/www/ansible/g6k466c74l/configs/-root-kube_configsh
-      dest: /root/kube_config.sh
-      owner: 
-      group: 
-      mode: ''
-      follow: no
-
-  - name: Create a directory if it does not exist
-    ansible.builtin.file:
-      path: /root/helm-values
-      state: directory
-      mode: '0755'
-      
-  - name: Copy config kube-prometheus-stack-values.yaml file with owner and permissions
-    ansible.builtin.template:
-      src: /var/www/ansible/g6k466c74l/configs/-root-helm-values-kube-prometheus-stack-valuesyaml
-      dest: /root/helm-values/kube-prometheus-stack-values.yaml
-      owner: 
-      group: 
-      mode: ''
-      follow: no
-
-  - name: Create a directory if it does not exist
-    ansible.builtin.file:
-      path: /root/helm-values
-      state: directory
-      mode: '0755'
-      
-  - name: Copy config metallb-values.yaml file with owner and permissions
-    ansible.builtin.template:
-      src: /var/www/ansible/g6k466c74l/configs/-root-helm-values-metallb-valuesyaml
-      dest: /root/helm-values/metallb-values.yaml
-      owner: 
-      group: 
-      mode: ''
-      follow: no
-
-  - name: Create a directory if it does not exist
-    ansible.builtin.file:
-      path: /root/helm-values
-      state: directory
-      mode: '0755'
-      
-  - name: Copy config rook-operator-values.yaml file with owner and permissions
-    ansible.builtin.template:
-      src: /var/www/ansible/g6k466c74l/configs/-root-helm-values-rook-operator-valuesyaml
-      dest: /root/helm-values/rook-operator-values.yaml
-      owner: 
-      group: 
-      mode: ''
-      follow: no
-  
+  ##### Install packages et prerequis de base #####
   - name: Install packages
     dnf:
       name:
@@ -104,6 +47,65 @@
       name: firewalld
       state: stopped
       enabled: false
+      
+  ##### Git clone conf files #####
+#  - name: clone foo.git
+#    git:
+#      repo: 'https://{{ vault_git_username }}:{{ vault_git_password }}@dev.azure.com/Septeo-Infra/Kube-sandbox/_git/Kube-sandbox'
+#      dest: /root/Kube-sandbox
+
+  - name: clone foo.git
+    git:
+      repo: 'https://github.com/DCx14/Kube_Automation_ansible.git'
+      dest: /root/Kube-sandbox
+      
+  ##### copy config files #####
+        
+  - name: Create a directory if it does not exist
+    ansible.builtin.file:
+      path: /root/helm-values
+      state: directory
+      mode: '0755'
+  - name: Copy config kube_config.sh file with owner and permissions
+    copy:
+      src: /root/Kube_Automation_ansible/kube_config.sh
+      dest: /root/kube_config.sh
+      remote_src: true
+        
+  - name: Copy config kube-prometheus-stack-values.yaml file with owner and permissions
+    ansible.builtin.copy:
+      src: /root/Kube_Automation_ansible/kube-prometheus-stack-values.yaml
+      dest: /root/helm-values/kube-prometheus-stack-values.yaml
+      remote_src: true
+  - name: Copy config metallb-values.yaml file with owner and permissions
+    ansible.builtin.copy:
+      src: /root/Kube_Automation_ansible/metallb-values.yaml
+      dest: /root/helm-values/metallb-values.yaml
+      remote_src: true
+  - name: Copy config rook-cluster-values.yaml file with owner and permissions
+    ansible.builtin.copy:
+      src: /root/Kube_Automation_ansible/rook-cluster-values.yaml
+      dest: /root/helm-values/rook-cluster-values.yaml
+      remote_src: true
+        
+  - name: Copy config rook-operator-values-true.yaml file with owner and permissions
+    ansible.builtin.copy:
+      src: /root/Kube_Automation_ansible/rook-operator-values-true.yaml
+      dest: /root/helm-values/rook-operator-values-true.yaml
+      remote_src: true
+  - name: Copy config rook-operator-values.yaml file with owner and permissions
+    ansible.builtin.copy:
+      src: /root/Kube_Automation_ansible/rook-operator-values.yaml
+      dest: /root/helm-values/rook-operator-values.yaml
+      remote_src: true
+  ############## 
+  - name: Enable containerd
+    ansible.builtin.systemd:
+      name: containerd
+      state: started
+      enabled: true
+        
+  ##### Installation de containerd #####
   - name: Add Docker Repo
     shell: >
       dnf config-manager --add-repo
@@ -121,6 +123,8 @@
       name: containerd
       state: started
       enabled: true
+      
+  ##### Installation de kubernetes #####
   - name: Kubernetes Repos
     ansible.builtin.copy:
       dest: /etc/yum.repos.d/kubernetes.repo
@@ -147,6 +151,8 @@
       name: kubelet
       state: started
       enabled: true
+      
+  ##### Initialisation du master #####
   - name: Kubeadm init
     command: kubeadm init --pod-network-cidr=172.31.0.0/17 --service-cidr=172.31.128.0/17
     when: inventory_hostname in master
@@ -158,9 +164,11 @@
       mkdir -p mkdir -p $HOME/.kube && sudo cp -i /etc/kubernetes/admin.conf
       $HOME/.kube/config && chown $(id -u):$(id -g) $HOME/.kube/config 
     when: inventory_hostname in master
+  ##### Taint du master #####
   - name: taint node
     shell: kubectl taint nodes --all node-role.kubernetes.io/control-plane-
     when: inventory_hostname in master
+  ##### Installation de HELM #####
   - name: Download Helm
     ansible.builtin.get_url:
       url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
@@ -171,6 +179,7 @@
   - name: Ansible Simple Variable Example Usage
     debug:
       msg: "{{ master }}, Let's learn Ansible variables"
+  ##### Join node to master #####
   - name: Generate join token
     shell: kubeadm token create --print-join-command
     register: kubeadm_join_cmd
@@ -184,14 +193,19 @@
   - name: Run kubeadm join
     shell: "{{ kubeadm_join }} --ignore-preflight-errors=swap"
     when: inventory_hostname not in master
-    
+  ##### Download du script pour les autres params + exec #####
   - name: Changing perm of "kube_config.sh", adding "+x"
     file: dest=/root/kube_config.sh mode=a+x
-    
+    when: inventory_hostname in master
   - name: Run a script kubeConfig
     shell: 'sh -x  /root/kube_config.sh {{ rangeMetallb }}'
-    register: cmd
     when: inventory_hostname in master
-  
-  - debug:
-      msg: "{{ cmd.stdout }}"
+      
+  - name: Display kubeconfig contents
+    shell: cat ~/.kube/config
+    register: kubeadm_print
+    delegate_to: "{{ master }}"
+  - set_fact:
+      kubeadm_join: "{{ kubeadm_print.stdout }}"
+      
+  - debug: var=kubeadm_join
