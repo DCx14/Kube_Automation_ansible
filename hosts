@@ -1,0 +1,7 @@
+[servers]
+10.10.100.100 ansible_port=22 ansible_user=root ansible_password=42 ansible_connection=ssh                
+10.10.100.101 ansible_port=22 ansible_user=root ansible_password=42 ansible_connection=ssh                
+10.10.100.102 ansible_port=22 ansible_user=root ansible_password=42 ansible_connection=ssh                
+
+[defaults]
+host_key_ch
